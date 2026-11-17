@@ -8,7 +8,8 @@ find_package(cafeglsl REQUIRED)
 
 add_executable(cafeglsl_gs_test main.cpp)
 set_target_properties(cafeglsl_gs_test PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
-target_link_libraries(cafeglsl_gs_test PRIVATE whb cafeglsl::cafeglsl)
+# whb, coreinit and the rest of wut are all in libwut, which the toolchain links.
+target_link_libraries(cafeglsl_gs_test PRIVATE cafeglsl::cafeglsl)
 
 wut_create_rpx(cafeglsl_gs_test)
 wut_create_wuhb(cafeglsl_gs_test

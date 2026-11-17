@@ -207,7 +207,7 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
             ca-certificates git pkg-config ninja-build \
             python3-pip python3-setuptools python3-mako python3-yaml \
-            python3-packaging bison flex
+            python3-packaging bison flex cmake
           pip3 install --no-cache-dir 'meson>=1.4' \
             || pip3 install --no-cache-dir --break-system-packages 'meson>=1.4'
 
@@ -255,4 +255,35 @@ jobs:
         with:
           name: cafeglsl-wiiu-ppc
           path: stage/
+          if-no-files-found: error
+
+      - name: Build the geometry shader test app
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            "$DEVKITPRO/portlibs/wiiu/bin/powerpc-eabi-cmake" \
+              -S cafecompiler/examples/gs-test -B build-gs-test \
+              -DCMAKE_BUILD_TYPE=Release \
+              -Dcafeglsl_DIR="$PWD/stage/lib/cmake/cafeglsl" &&
+            cmake --build build-gs-test --verbose
+          } 2>&1 | tee ci-build.log
+          mkdir -p gs-test
+          cp build-gs-test/*.rpx build-gs-test/*.wuhb gs-test/
+
+      - name: Report test app failure as annotations
+        if: failure()
+        shell: bash
+        run: |
+          f=ci-build.log
+          [ -f "$f" ] || exit 0
+          { grep -n -B3 -A8 -E "error|Error|undefined reference|not found" "$f" | head -150
+            echo "----- tail -----"; tail -40 "$f"; } > ci-excerpt.txt || true
+          msg=$(sed -e 's/%/%25/g' -e 's/\r/%0D/g' ci-excerpt.txt | awk 'BEGIN{ORS="%0A"} {print}')
+          echo "::error title=$f::$msg"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cafeglsl-gs-test
+          path: gs-test/
           if-no-files-found: error

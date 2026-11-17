@@ -56,10 +56,29 @@ jobs:
         run: meson setup build -Dtools=glsl ${{ env.MESON_ARGS }}
 
       - name: Build
-        run: ninja -C build cafecompiler/glslcompiler cafecompiler/libcafeglsl.a
+        shell: bash
+        run: |
+          set -o pipefail
+          ninja -C build cafecompiler/glslcompiler cafecompiler/libcafeglsl.a 2>&1 | tee ci-build.log
 
       - name: Test
-        run: meson test -C build --print-errorlogs ${{ env.MESON_TESTS }}
+        shell: bash
+        run: |
+          set -o pipefail
+          meson test -C build --print-errorlogs ${{ env.MESON_TESTS }} 2>&1 | tee ci-test.log
+
+      - name: Report failure as annotations
+        if: failure()
+        shell: bash
+        run: |
+          # Surface compiler and test errors through the check-run annotations API.
+          for f in ci-build.log ci-test.log build/meson-logs/testlog.txt; do
+            [ -f "$f" ] || continue
+            { grep -n -B3 -A8 -E "error:|Error |FAILED|Check failed|undefined reference" "$f" | head -150
+              echo "----- tail -----"; tail -40 "$f"; } > ci-excerpt.txt || true
+            msg=$(sed -e 's/%/%25/g' -e 's/\r/%0D/g' ci-excerpt.txt | awk 'BEGIN{ORS="%0A"} {print}')
+            echo "::error title=$f::$msg"
+          done
 
       - name: Package
         run: ./cafecompiler/ci/package.sh host build stage
@@ -211,7 +230,23 @@ jobs:
             -Db_lto=false
 
       - name: Build
-        run: ninja -C build-cafe cafecompiler/libcafeglsl.a
+        shell: bash
+        run: |
+          set -o pipefail
+          ninja -C build-cafe cafecompiler/libcafeglsl.a 2>&1 | tee ci-build.log
+
+      - name: Report failure as annotations
+        if: failure()
+        shell: bash
+        run: |
+          # Surface compiler and test errors through the check-run annotations API.
+          for f in ci-build.log ci-test.log build-cafe/meson-logs/testlog.txt; do
+            [ -f "$f" ] || continue
+            { grep -n -B3 -A8 -E "error:|Error |FAILED|Check failed|undefined reference" "$f" | head -150
+              echo "----- tail -----"; tail -40 "$f"; } > ci-excerpt.txt || true
+            msg=$(sed -e 's/%/%25/g' -e 's/\r/%0D/g' ci-excerpt.txt | awk 'BEGIN{ORS="%0A"} {print}')
+            echo "::error title=$f::$msg"
+          done
 
       - name: Package
         run: ./cafecompiler/ci/package.sh wiiu build-cafe stage

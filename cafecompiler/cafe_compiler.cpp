@@ -1041,8 +1041,22 @@ static void FillGeometryRegisters(const r600_pipe_shader &pipe_shader,
       S_02887C_NUM_GPRS(shader.bc.ngpr) |
       S_02887C_DX10_CLAMP(1) |
       S_02887C_STACK_SIZE(shader.bc.nstack);
-   output.regs.vgt_gs_out_prim_type =
-      r600_conv_prim_to_gs_out(nir->info.gs.output_primitive);
+   /* As r600_conv_prim_to_gs_out(): a GS emits points, line strips or
+    * triangle strips.
+    */
+   switch (nir->info.gs.output_primitive) {
+   case MESA_PRIM_POINTS:
+      output.regs.vgt_gs_out_prim_type = V_028A6C_OUTPRIM_TYPE_POINTLIST;
+      break;
+   case MESA_PRIM_LINES:
+   case MESA_PRIM_LINE_LOOP:
+   case MESA_PRIM_LINE_STRIP:
+      output.regs.vgt_gs_out_prim_type = V_028A6C_OUTPRIM_TYPE_LINESTRIP;
+      break;
+   default:
+      output.regs.vgt_gs_out_prim_type = V_028A6C_OUTPRIM_TYPE_TRISTRIP;
+      break;
+   }
 
    unsigned cut_mode;
    if (max_vertices <= 128)

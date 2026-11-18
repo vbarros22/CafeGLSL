@@ -350,7 +350,10 @@ static bool SetUp(Scene &scene)
 
 static void TearDown(Scene &scene)
 {
-   GX2DrawDone();
+   /* No GX2DrawDone() here: once WHBProcIsRunning() is false WHB has already
+    * released the foreground, the GPU is idle and waiting on it never returns.
+    */
+   Log("teardown: freeing buffers");
    GX2RDestroyBufferEx(&scene.triangle_a, GX2R_RESOURCE_BIND_NONE);
    GX2RDestroyBufferEx(&scene.triangle_b, GX2R_RESOURCE_BIND_NONE);
    GX2RDestroyBufferEx(&scene.points_c, GX2R_RESOURCE_BIND_NONE);
@@ -365,7 +368,9 @@ static void TearDown(Scene &scene)
       FreeGeometryShader(program->gs);
    }
    FreeShaders(scene.plain_vs, scene.plain_ps);
+   Log("teardown: shaders freed");
    DestroyGLSLCompiler();
+   Log("teardown: compiler destroyed");
 }
 
 int main(int argc, char **argv)
@@ -428,6 +433,7 @@ int main(int argc, char **argv)
    if (ready)
       TearDown(scene);
    WHBGfxShutdown();
+   Log("graphics shut down");
    WHBUnmountSdCard();
    WHBProcShutdown();
    return 0;

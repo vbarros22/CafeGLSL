@@ -52,6 +52,9 @@ GX2ShaderMode CompileShaderPair(const char *vertexSource, const char *pixelSourc
                                       char *infoLogOut, int infoLogMaxLength,
                                       GLSL_COMPILER_FLAG flags);
 
+/* Defined when CompileGeometryShaderSet() and FreeGeometryShader() are available. */
+#define CAFEGLSL_HAS_GEOMETRY_SHADERS 1
+
 /* Compile a vertex, geometry and pixel shader for GX2_SHADER_MODE_GEOMETRY_SHADER.
  * Returns GX2_SHADER_MODE_GEOMETRY_SHADER, or GLSL_SHADER_MODE_ERROR on failure.
  * All three sources are required, and requestedMode must be GLSL_COMPILE_AUTO or

@@ -12,6 +12,7 @@
 #include <cafeglsl/CafeGLSLCompiler.h>
 
 #include <coreinit/memdefaultheap.h>
+#include <vpad/input.h>
 #include <gx2/draw.h>
 #include <gx2/event.h>
 #include <gx2/mem.h>
@@ -393,6 +394,13 @@ int main(int argc, char **argv)
 
    uint32_t frame = 0;
    while (WHBProcIsRunning()) {
+      /* Aroma's button combos (screenshots and the like) only see input the
+       * app reads, so poll the GamePad even though the test ignores it.
+       */
+      VPADStatus vpad;
+      VPADReadError vpad_error;
+      VPADRead(VPAD_CHAN_0, &vpad, 1, &vpad_error);
+
       const bool draw_b = frame >= 120;
       const bool draw_c = frame >= 240;
       const bool first_b = frame == 120 && scene.pass_through_ok;
